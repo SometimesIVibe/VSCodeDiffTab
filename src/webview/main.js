@@ -1,8 +1,10 @@
 // Diff Tab webview entry point. Layout/splitters/toolbar/persistence land
 // in Step 2. Step 4 wires the Diff button to the pure alignDiff() model
 // and renders the aligned rows into #result-area (src/webview/render.mjs).
-// Open in Diff Editor still posts a placeholder message for Step 5 to
-// implement.
+// Step 5 wires Open in Diff Editor: posts { type: 'openNativeDiff', left,
+// right } with the current textarea values, read at click time — no state
+// round-trip. The extension host writes them to temp files and opens
+// VS Code's built-in diff editor.
 //
 // The equal-height guarantee is structural, not something this script has
 // to police: both textareas fill 100% of their flex cell inside
@@ -222,7 +224,11 @@ import { renderDiff } from "./render.mjs";
   });
 
   openDiffEditorButton.addEventListener("click", () => {
-    vscode.postMessage({ command: "openDiffEditor" }); // Step 5 implements this.
+    vscode.postMessage({
+      type: "openNativeDiff",
+      left: leftTextarea.value,
+      right: rightTextarea.value,
+    });
   });
 
   clearButton.addEventListener("click", () => {

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
+import { TempFiles } from "../tempFiles";
 
 /**
  * Wraps a single "Diff Tab" webview editor panel (`createWebviewPanel`,
@@ -14,18 +15,26 @@ export class DiffPanel {
 
   private readonly panel: vscode.WebviewPanel;
   private readonly disposables: vscode.Disposable[] = [];
+  private readonly panelId: string;
 
   private constructor(
     private readonly extensionUri: vscode.Uri,
+    private readonly tempFiles: TempFiles,
     panel: vscode.WebviewPanel
   ) {
     this.panel = panel;
+    this.panelId = randomBytes(6).toString("hex");
     this.panel.webview.html = this.getHtml(this.panel.webview);
+    this.panel.webview.onDidReceiveMessage(
+      (message) => this.handleMessage(message),
+      null,
+      this.disposables
+    );
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
   }
 
   /** Creates and shows a new Diff Tab panel in the active editor column. */
-  public static create(extensionUri: vscode.Uri): DiffPanel {
+  public static create(extensionUri: vscode.Uri, tempFiles: TempFiles): DiffPanel {
     const webviewPanel = vscode.window.createWebviewPanel(
       "diffTab",
       "Diff Tab",
@@ -37,7 +46,7 @@ export class DiffPanel {
       }
     );
 
-    const instance = new DiffPanel(extensionUri, webviewPanel);
+    const instance = new DiffPanel(extensionUri, tempFiles, webviewPanel);
     DiffPanel.panels.add(instance);
     return instance;
   }
@@ -47,6 +56,40 @@ export class DiffPanel {
     return DiffPanel.panels;
   }
 
+  private async handleMessage(message: unknown): Promise<void> {
+    if (
+      !message ||
+      typeof message !== "object" ||
+      (message as { type?: unknown }).type !== "openNativeDiff"
+    ) {
+      return;
+    }
+
+    const { left, right } = message as { left: unknown; right: unknown };
+    const leftText = typeof left === "string" ? left : "";
+    const rightText = typeof right === "string" ? right : "";
+
+    if (leftText === "" && rightText === "") {
+      vscode.window.showInformationMessage(
+        "Paste text into both boxes before opening the diff editor."
+      );
+      return;
+    }
+
+    const { leftUri, rightUri } = await this.tempFiles.writePair(
+      this.panelId,
+      leftText,
+      rightText
+    );
+
+    await vscode.commands.executeCommand(
+      "vscode.diff",
+      leftUri,
+      rightUri,
+      "Diff Tab: Original ↔ Changed"
+    );
+  }
+
   public dispose(): void {
     DiffPanel.panels.delete(this);
     for (const disposable of this.disposables) {
@@ -54,6 +97,7 @@ export class DiffPanel {
     }
     this.disposables.length = 0;
     this.panel.dispose();
+    void this.tempFiles.deletePair(this.panelId);
   }
 
   private getHtml(webview: vscode.Webview): string {
