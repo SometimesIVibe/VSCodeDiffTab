@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
+import { Buffer } from "node:buffer";
 import { TempFiles } from "../tempFiles";
 
 /**
@@ -13,6 +14,15 @@ import { TempFiles } from "../tempFiles";
 export class DiffPanel {
   private static readonly panels = new Set<DiffPanel>();
 
+  /** workspaceState keys — single saved pair per the masterplan's YAGNI decision. */
+  private static readonly LEFT_KEY = "diffTab.left";
+  private static readonly RIGHT_KEY = "diffTab.right";
+
+  /** Per-side cap for the reload-persistence save; beyond this, skip silently. */
+  private static readonly MAX_SAVED_BYTES = 500 * 1024;
+
+  private static readonly DEFAULT_TITLE = "Diff Tab";
+
   private readonly panel: vscode.WebviewPanel;
   private readonly disposables: vscode.Disposable[] = [];
   private readonly panelId: string;
@@ -20,6 +30,7 @@ export class DiffPanel {
   private constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly tempFiles: TempFiles,
+    private readonly workspaceState: vscode.Memento,
     panel: vscode.WebviewPanel
   ) {
     this.panel = panel;
@@ -34,10 +45,14 @@ export class DiffPanel {
   }
 
   /** Creates and shows a new Diff Tab panel in the active editor column. */
-  public static create(extensionUri: vscode.Uri, tempFiles: TempFiles): DiffPanel {
+  public static create(
+    extensionUri: vscode.Uri,
+    tempFiles: TempFiles,
+    workspaceState: vscode.Memento
+  ): DiffPanel {
     const webviewPanel = vscode.window.createWebviewPanel(
       "diffTab",
-      "Diff Tab",
+      DiffPanel.DEFAULT_TITLE,
       vscode.ViewColumn.Active,
       {
         enableScripts: true,
@@ -46,7 +61,7 @@ export class DiffPanel {
       }
     );
 
-    const instance = new DiffPanel(extensionUri, tempFiles, webviewPanel);
+    const instance = new DiffPanel(extensionUri, tempFiles, workspaceState, webviewPanel);
     DiffPanel.panels.add(instance);
     return instance;
   }
@@ -57,15 +72,30 @@ export class DiffPanel {
   }
 
   private async handleMessage(message: unknown): Promise<void> {
-    if (
-      !message ||
-      typeof message !== "object" ||
-      (message as { type?: unknown }).type !== "openNativeDiff"
-    ) {
+    if (!message || typeof message !== "object") {
       return;
     }
 
-    const { left, right } = message as { left: unknown; right: unknown };
+    const type = (message as { type?: unknown }).type;
+
+    if (type === "openNativeDiff") {
+      await this.handleOpenNativeDiff(message as { left: unknown; right: unknown });
+      return;
+    }
+
+    if (type === "textsChanged") {
+      this.handleTextsChanged(message as { left?: unknown; right?: unknown });
+      return;
+    }
+
+    if (type === "diffStats") {
+      this.handleDiffStats(message as { added?: unknown; removed?: unknown });
+      return;
+    }
+  }
+
+  private async handleOpenNativeDiff(message: { left: unknown; right: unknown }): Promise<void> {
+    const { left, right } = message;
     const leftText = typeof left === "string" ? left : "";
     const rightText = typeof right === "string" ? right : "";
 
@@ -88,6 +118,45 @@ export class DiffPanel {
       rightUri,
       "Diff Tab: Original ↔ Changed"
     );
+  }
+
+  /**
+   * Persists the debounced `{ left, right }` pair for reload survival.
+   * Each side is capped independently at `MAX_SAVED_BYTES` — a side over
+   * the cap is skipped silently (webview `getState`/`setState` already
+   * covers hide/show survival regardless of size; only the heavier
+   * workspaceState round-trip is capped).
+   */
+  private handleTextsChanged(message: { left?: unknown; right?: unknown }): void {
+    if (typeof message.left === "string") {
+      this.saveSide(DiffPanel.LEFT_KEY, message.left);
+    }
+    if (typeof message.right === "string") {
+      this.saveSide(DiffPanel.RIGHT_KEY, message.right);
+    }
+  }
+
+  private saveSide(key: string, text: string): void {
+    if (Buffer.byteLength(text, "utf8") > DiffPanel.MAX_SAVED_BYTES) {
+      return;
+    }
+    void this.workspaceState.update(key, text);
+  }
+
+  /**
+   * Reflects the last diff's stats in the panel title (`Diff Tab (+A −R)`),
+   * resetting to the plain title when there's nothing to show (empty
+   * inputs or no differences) — the webview sends `added: 0, removed: 0`
+   * for both of those cases.
+   */
+  private handleDiffStats(message: { added?: unknown; removed?: unknown }): void {
+    const added = typeof message.added === "number" ? message.added : 0;
+    const removed = typeof message.removed === "number" ? message.removed : 0;
+
+    this.panel.title =
+      added === 0 && removed === 0
+        ? DiffPanel.DEFAULT_TITLE
+        : `${DiffPanel.DEFAULT_TITLE} (+${added} −${removed})`;
   }
 
   public dispose(): void {
@@ -115,6 +184,22 @@ export class DiffPanel {
       `script-src 'nonce-${nonce}'`,
     ].join("; ");
 
+    // Seeds a *fresh* panel from the single saved workspaceState pair. This
+    // only ever reaches a webview that has no state of its own: getHtml()
+    // runs once, in the constructor, before the webview has had a chance
+    // to acquireVsCodeApi().setState() anything — retainContextWhenHidden
+    // means the webview is never torn down/rebuilt (and getHtml() never
+    // re-runs) for the lifetime of this panel, so there's no risk of this
+    // clobbering a live editing session on hide/show. main.js additionally
+    // only consults this payload when its own vscode.getState() comes back
+    // empty, so even a future code path that re-renders the HTML stays safe.
+    const initialLeft = this.workspaceState.get<string>(DiffPanel.LEFT_KEY, "");
+    const initialRight = this.workspaceState.get<string>(DiffPanel.RIGHT_KEY, "");
+    const initPayload = JSON.stringify({ left: initialLeft, right: initialRight }).replace(
+      /</g,
+      "\\u003c"
+    );
+
     return /* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,9 +212,10 @@ export class DiffPanel {
 <body>
   <div id="root">
     <div class="toolbar">
-      <button id="btn-diff" type="button">Diff</button>
-      <button id="btn-open-diff-editor" type="button">Open in Diff Editor</button>
-      <button id="btn-clear" type="button">Clear</button>
+      <button id="btn-diff" type="button" title="Compute the diff (Ctrl/Cmd+Enter)">Diff</button>
+      <button id="btn-open-diff-editor" type="button" title="Open both texts in VS Code's built-in diff editor">Open in Diff Editor</button>
+      <button id="btn-clear" type="button" title="Clear both text boxes">Clear</button>
+      <button id="btn-swap" type="button" title="Swap the left and right text">Swap</button>
     </div>
     <div class="inputs-row" id="inputs-row">
       <div class="input-cell input-left" id="input-left-cell">
@@ -169,6 +255,7 @@ export class DiffPanel {
       <p class="placeholder">Diff results will appear here.</p>
     </div>
   </div>
+  <script nonce="${nonce}">window.__DIFF_TAB_INIT__ = ${initPayload};</script>
   <script nonce="${nonce}" src="${jsUri}"></script>
 </body>
 </html>`;

@@ -161,6 +161,12 @@ body.dragging-h * {
   color: var(--vscode-descriptionForeground);
 }
 
+/* The "0 changes" friendly state (both texts diffed clean) — a quieter,
+   slightly affirmative tone instead of the neutral "paste text" prompt. */
+.placeholder-friendly {
+  color: var(--vscode-terminal-ansiGreen, var(--vscode-descriptionForeground));
+}
+
 /* ---------------------------------------------------------------------
    Diff result table (Step 4).
 

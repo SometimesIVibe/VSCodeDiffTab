@@ -11,7 +11,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("diffTab.new", () => {
-      DiffPanel.create(context.extensionUri, tempFiles);
+      DiffPanel.create(context.extensionUri, tempFiles, context.workspaceState);
     })
   );
 }

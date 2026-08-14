@@ -1,16 +1,70 @@
 # Diff Tab
 
-A VS Code extension that opens a webview editor tab with two size-adjustable
-text inputs side by side. A **Diff** button computes a git-style line diff of
-the two texts and renders it underneath, side by side and row-aligned, with
-per-side line numbers, additions green and removals red. A second button
-opens the same two texts in VS Code's built-in diff editor via temporary
-files.
+Diff Tab opens a full editor tab with two side-by-side text boxes and a
+one-click, git-style line diff between them — no files, no source control,
+no setup. Paste two blobs of text, press **Diff**, read the result.
 
-This is a scaffold; the diffing UI itself lands in later steps.
+<!-- Screenshot placeholder: toolbar + two inputs + rendered diff, light and
+     dark theme. Add once the UI is stable. -->
+
+## Features
+
+- **Two size-adjustable text inputs.** A vertical splitter between them
+  changes the width ratio; a horizontal splitter below them changes how
+  much of the tab the inputs take up versus the result area. Both inputs
+  always share the same height — there's a single splitter for that, not
+  two independently resizable boxes that could drift apart.
+- **Diff button.** Computes a Myers/LCS line diff (the same algorithm
+  family `git diff` uses) and renders it underneath as two aligned columns:
+  left is the original, right is the changed text, each with its own line
+  numbers. Removed lines are highlighted on the left, added lines on the
+  right, and gaps are padded so a removed block and its replacement line up
+  row for row, the way GitHub's split diff view does. Long lines are
+  ellipsized rather than wrapped, so row alignment never breaks — hover a
+  clipped line to see it in full via its tooltip.
+  Press **Ctrl+Enter** (**Cmd+Enter** on macOS) from inside either text box
+  as a shortcut for the Diff button.
+- **Swap button.** Swaps the left and right text boxes in place, for when
+  you pasted the two sides backwards.
+- **Open in Diff Editor.** Sends both texts to VS Code's own built-in diff
+  editor instead of Diff Tab's inline view. See below for how this works.
+- **Multiple tabs.** Every "Diff Tab: New Diff" invocation opens its own
+  independent tab; there's no limit on how many can be open at once.
+- **Survives reload.** The last pair of texts you typed is restored the
+  next time you open a fresh Diff Tab — including after a full window
+  reload, not just hiding and re-showing the tab.
+- **No settings.** Diff Tab has no configuration to open, learn, or keep in
+  sync — everything it does is driven by the toolbar in front of you.
+
+## Usage
+
+1. Run **Diff Tab: New Diff** from the Command Palette (there's no default
+   keybinding — this is an occasional tool, not something you'd want
+   fighting for a shortcut with your regular editing keys).
+2. Paste the original text into the left box, the changed text into the
+   right box.
+3. Press **Diff** (or Ctrl/Cmd+Enter) to see the aligned, colorized diff
+   below the inputs, or **Open in Diff Editor** to compare the same two
+   texts in VS Code's native diff view.
+4. Use **Swap** to flip the two sides, or **Clear** to empty both boxes.
+
+## The "Open in Diff Editor" mechanism
+
+VS Code's built-in diff editor (`vscode.diff`) compares two files, not two
+in-memory strings, so Diff Tab writes your two text boxes out to a pair of
+real temporary files — under the extension's global storage folder, not
+your workspace — and then opens VS Code's native diff on that pair. They're
+real files rather than untitled/virtual documents specifically so the
+native editor can re-diff live if you edit either side directly in that
+diff view.
+
+Each Diff Tab tab gets its own pair of temp files, overwritten every time
+you click the button again. They're deleted when you close that tab, and
+any files left behind from an earlier session (e.g. after a crash) are
+swept away the next time the extension activates.
 
 ## Commands
 
-| Command ID   | Title                | Notes                                        |
-| ------------ | --------------------- | --------------------------------------------- |
+| Command ID    | Title                | Notes                                                                                |
+| ------------- | --------------------- | ------------------------------------------------------------------------------------- |
 | `diffTab.new` | Diff Tab: New Diff   | Opens a new Diff Tab editor tab. No default keybinding — command palette only; several tabs can be open at once. |
