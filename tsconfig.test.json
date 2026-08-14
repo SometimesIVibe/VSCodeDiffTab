@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "outDir": "out-test",
+    "rootDir": "src",
+    "strict": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "types": ["node", "mocha", "vscode"]
+  },
+  "include": [
+    "src/test/**/*.ts",
+    "src/webview/align.js",
+    "src/tempFiles.ts"
+  ],
+  "exclude": ["node_modules", "dist", "out", "out-test"]
+}

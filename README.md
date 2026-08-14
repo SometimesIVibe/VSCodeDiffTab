@@ -68,3 +68,19 @@ swept away the next time the extension activates.
 | Command ID    | Title                | Notes                                                                                |
 | ------------- | --------------------- | ------------------------------------------------------------------------------------- |
 | `diffTab.new` | Diff Tab: New Diff   | Opens a new Diff Tab editor tab. No default keybinding — command palette only; several tabs can be open at once. |
+
+## Install from .vsix
+
+Diff Tab isn't published to the Marketplace. Install the packaged
+`.vsix` directly:
+
+1. Download or build `vscode-diff-tab-0.1.0.vsix`.
+2. In VS Code, open the Command Palette and run **Extensions: Install from
+   VSIX...**, then pick the file — or from a terminal:
+
+   ```bash
+   code --install-extension vscode-diff-tab-0.1.0.vsix
+   ```
+
+3. Reload the window if prompted. **Diff Tab: New Diff** is now available
+   from the Command Palette.

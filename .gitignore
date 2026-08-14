@@ -2,3 +2,5 @@ node_modules/
 dist/
 media/main.js
 *.vsix
+out-test/
+.vscode-test/

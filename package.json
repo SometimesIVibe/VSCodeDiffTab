@@ -2,9 +2,20 @@
   "name": "vscode-diff-tab",
   "displayName": "Diff Tab",
   "description": "Opens a webview editor tab with two side-adjustable text inputs, a git-style side-by-side line diff, and a shortcut into VS Code's built-in diff editor.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "joachimsejr",
   "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SometimesIVibe/VSCodeDiffTab"
+  },
+  "keywords": [
+    "diff",
+    "compare",
+    "text",
+    "side-by-side"
+  ],
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -22,12 +33,19 @@
   },
   "scripts": {
     "build": "node esbuild.mjs",
-    "watch": "node esbuild.mjs --watch"
+    "watch": "node esbuild.mjs --watch",
+    "package": "vsce package",
+    "pretest": "tsc -p tsconfig.test.json",
+    "test": "npm run pretest && vscode-test"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.14.0",
     "@types/vscode": "^1.90.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.23.0",
+    "mocha": "^11.8.0",
     "typescript": "^5.5.0"
   },
   "dependencies": {
