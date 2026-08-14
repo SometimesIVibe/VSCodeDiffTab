@@ -82,7 +82,48 @@ export class DiffPanel {
 </head>
 <body>
   <div id="root">
-    <p class="placeholder">Diff Tab (scaffold) — inputs and diff UI land in later steps.</p>
+    <div class="toolbar">
+      <button id="btn-diff" type="button">Diff</button>
+      <button id="btn-open-diff-editor" type="button">Open in Diff Editor</button>
+      <button id="btn-clear" type="button">Clear</button>
+    </div>
+    <div class="inputs-row" id="inputs-row">
+      <div class="input-cell input-left" id="input-left-cell">
+        <textarea
+          id="input-left"
+          class="input-textarea"
+          spellcheck="false"
+          placeholder="Paste original text…"
+        ></textarea>
+      </div>
+      <div
+        class="v-splitter"
+        id="v-splitter"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize inputs"
+        tabindex="0"
+      ></div>
+      <div class="input-cell input-right" id="input-right-cell">
+        <textarea
+          id="input-right"
+          class="input-textarea"
+          spellcheck="false"
+          placeholder="Paste changed text…"
+        ></textarea>
+      </div>
+    </div>
+    <div
+      class="h-splitter"
+      id="h-splitter"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize inputs against result area"
+      tabindex="0"
+    ></div>
+    <div class="result-area" id="result-area">
+      <p class="placeholder">Diff results will appear here.</p>
+    </div>
   </div>
   <script nonce="${nonce}" src="${jsUri}"></script>
 </body>

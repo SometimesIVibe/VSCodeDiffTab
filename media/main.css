@@ -9,10 +9,145 @@ body {
   font-size: var(--vscode-font-size);
 }
 
+/* Applied while a splitter is being dragged, so the cursor and the
+   disabled text selection stay consistent even if the pointer briefly
+   leaves the splitter's own hit area (pointer capture keeps the drag
+   going regardless). */
+body.dragging-v {
+  cursor: col-resize;
+}
+
+body.dragging-h {
+  cursor: row-resize;
+}
+
+body.dragging-v,
+body.dragging-v * ,
+body.dragging-h,
+body.dragging-h * {
+  user-select: none;
+}
+
 #root {
   height: 100%;
   display: flex;
   flex-direction: column;
+  --left-ratio: 50%;
+  --inputs-height: 40%;
+}
+
+.toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.toolbar button {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  padding: 4px 12px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 2px;
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+}
+
+.toolbar button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.toolbar button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+/* The single height source of truth: this row's height is the only place
+   the two textareas' height is ever set. Both input cells stretch to
+   fill it completely, so the textareas can never disagree in height. */
+.inputs-row {
+  display: flex;
+  flex-direction: row;
+  flex: 0 0 auto;
+  height: var(--inputs-height);
+  min-height: 10%;
+  max-height: 85%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.input-cell {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.input-left {
+  flex: 0 0 var(--left-ratio);
+}
+
+.input-right {
+  flex: 1 1 auto;
+}
+
+.v-splitter {
+  flex: 0 0 6px;
+  width: 6px;
+  cursor: col-resize;
+  background-color: var(--vscode-panel-border);
+}
+
+.v-splitter:hover,
+.v-splitter.dragging {
+  background-color: var(--vscode-focusBorder);
+}
+
+.h-splitter {
+  flex: 0 0 6px;
+  height: 6px;
+  cursor: row-resize;
+  background-color: var(--vscode-panel-border);
+}
+
+.h-splitter:hover,
+.h-splitter.dragging {
+  background-color: var(--vscode-focusBorder);
+}
+
+.input-textarea {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px;
+  border: none;
+  outline: none;
+  resize: none;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
+  line-height: 1.4;
+}
+
+.input-textarea::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}
+
+.input-textarea:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.result-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .placeholder {
