@@ -1,13 +1,15 @@
-// Diff Tab webview entry point. Step 2 scope: the two-input layout, the
-// two splitter axes (width ratio + shared row height), the toolbar
-// (Clear is real; Diff / Open in Diff Editor post placeholder messages for
-// Step 4/5 to implement), and getState/setState persistence.
+// Diff Tab webview entry point. Layout/splitters/toolbar/persistence land
+// in Step 2. Step 3 wires the Diff button to the pure alignDiff() model
+// (console-logged proof only; real rendering is Step 4). Open in Diff
+// Editor still posts a placeholder message for Step 5 to implement.
 //
 // The equal-height guarantee is structural, not something this script has
 // to police: both textareas fill 100% of their flex cell inside
 // `.inputs-row`, and that row's own height (`--inputs-height`) is the only
 // height value either splitter ever touches. There is no code path that
 // can set one textarea's height without the other.
+import { alignDiff } from "./align.js";
+
 (function main() {
   const vscode = acquireVsCodeApi();
 
@@ -189,7 +191,10 @@
   // ---------------------------------------------------------------------
 
   diffButton.addEventListener("click", () => {
-    vscode.postMessage({ command: "diff" }); // Step 4 implements the result.
+    // Real rendering is Step 4; for now prove the bundled diff engine
+    // works end-to-end via the dev-tools console.
+    const { rows, stats } = alignDiff(leftTextarea.value, rightTextarea.value);
+    console.log(`[diffTab] rows=${rows.length} added=${stats.added} removed=${stats.removed}`);
   });
 
   openDiffEditorButton.addEventListener("click", () => {

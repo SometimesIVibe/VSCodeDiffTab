@@ -17,8 +17,8 @@ const extensionOptions = {
 
 /**
  * Webview-side bundle. Plain IIFE for the browser platform — no CSP
- * exceptions, no CDN. Placeholder entry for now; the jsdiff engine and
- * alignment model land in Step 3.
+ * exceptions, no CDN. Bundles jsdiff (via src/webview/align.js) alongside
+ * the UI wiring; rendering the aligned rows is Step 4.
  * @type {import('esbuild').BuildOptions}
  */
 const webviewOptions = {
