@@ -1,7 +1,8 @@
 // Diff Tab webview entry point. Layout/splitters/toolbar/persistence land
-// in Step 2. Step 3 wires the Diff button to the pure alignDiff() model
-// (console-logged proof only; real rendering is Step 4). Open in Diff
-// Editor still posts a placeholder message for Step 5 to implement.
+// in Step 2. Step 4 wires the Diff button to the pure alignDiff() model
+// and renders the aligned rows into #result-area (src/webview/render.mjs).
+// Open in Diff Editor still posts a placeholder message for Step 5 to
+// implement.
 //
 // The equal-height guarantee is structural, not something this script has
 // to police: both textareas fill 100% of their flex cell inside
@@ -9,6 +10,7 @@
 // height value either splitter ever touches. There is no code path that
 // can set one textarea's height without the other.
 import { alignDiff } from "./align.js";
+import { renderDiff } from "./render.mjs";
 
 (function main() {
   const vscode = acquireVsCodeApi();
@@ -32,6 +34,7 @@ import { alignDiff } from "./align.js";
   const diffButton = document.getElementById("btn-diff");
   const openDiffEditorButton = document.getElementById("btn-open-diff-editor");
   const clearButton = document.getElementById("btn-clear");
+  const resultArea = document.getElementById("result-area");
 
   /** Clamps `value` into the inclusive [min, max] range. */
   function clamp(value, range) {
@@ -190,11 +193,32 @@ import { alignDiff } from "./align.js";
   // Toolbar.
   // ---------------------------------------------------------------------
 
+  /** Replaces #result-area with a single centered friendly-message line. */
+  function showResultMessage(text) {
+    resultArea.textContent = "";
+    const message = document.createElement("p");
+    message.className = "placeholder";
+    message.textContent = text;
+    resultArea.appendChild(message);
+  }
+
   diffButton.addEventListener("click", () => {
-    // Real rendering is Step 4; for now prove the bundled diff engine
-    // works end-to-end via the dev-tools console.
-    const { rows, stats } = alignDiff(leftTextarea.value, rightTextarea.value);
-    console.log(`[diffTab] rows=${rows.length} added=${stats.added} removed=${stats.removed}`);
+    const leftValue = leftTextarea.value;
+    const rightValue = rightTextarea.value;
+
+    if (leftValue === "" && rightValue === "") {
+      showResultMessage("Paste text into both boxes, then press Diff.");
+      return;
+    }
+
+    const { rows, stats } = alignDiff(leftValue, rightValue);
+
+    if (stats.added === 0 && stats.removed === 0) {
+      showResultMessage("No differences.");
+      return;
+    }
+
+    renderDiff(resultArea, rows, stats);
   });
 
   openDiffEditorButton.addEventListener("click", () => {

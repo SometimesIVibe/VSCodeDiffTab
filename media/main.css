@@ -160,3 +160,98 @@ body.dragging-h * {
   text-align: center;
   color: var(--vscode-descriptionForeground);
 }
+
+/* ---------------------------------------------------------------------
+   Diff result table (Step 4).
+
+   `.result-area` (above) is the ONLY scroll container — it already has
+   `overflow: auto`. `.result-table` itself never scrolls on its own axis,
+   and every row is five flat grid children sharing that single grid's
+   column tracks, so there is exactly one vertical scrollbar for both
+   sides: they cannot drift out of alignment the way two independently
+   scrolled panes could.
+
+   Long lines: cells clip with `text-overflow: ellipsis` rather than
+   wrapping or getting their own per-cell horizontal scrollbar. Wrapping
+   would make row heights depend on line length, breaking the
+   one-grid-row-per-diff-row alignment this table depends on; per-cell
+   scrollbars don't scale to the tens of thousands of rows the chunked
+   renderer is built for (that's thousands of extra scrollable elements).
+   Ellipsis costs nothing at render time and keeps every row exactly one
+   line tall. The full line is still reachable via the cell's `title`
+   tooltip (set in render.mjs).
+   --------------------------------------------------------------------- */
+
+.result-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.result-stats {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-descriptionForeground);
+  background-color: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.result-table {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) auto max-content minmax(0, 1fr);
+  align-content: start;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
+  line-height: 1.4;
+}
+
+.cell {
+  padding: 0 8px;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cell.num {
+  text-align: right;
+  color: var(--vscode-editorLineNumber-foreground, #6e7681);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.cell.text {
+  /* `pre` (not `nowrap`) so significant whitespace in code — leading
+     indentation, repeated spaces — renders as typed instead of being
+     collapsed; it still never wraps, which is what text-overflow needs. */
+  white-space: pre;
+  text-overflow: ellipsis;
+}
+
+.cell.gutter {
+  padding: 0;
+  width: 8px;
+  background-color: var(--vscode-panel-border);
+}
+
+.cell.left.highlight {
+  background-color: var(
+    --vscode-diffEditor-removedTextBackground,
+    rgba(255, 0, 0, 0.2)
+  );
+}
+
+.cell.right.highlight {
+  background-color: var(
+    --vscode-diffEditor-insertedTextBackground,
+    rgba(0, 255, 0, 0.2)
+  );
+}
+
+.cell.pad {
+  background-color: var(--vscode-diffEditor-diagonalFill, rgba(128, 128, 128, 0.15));
+}
