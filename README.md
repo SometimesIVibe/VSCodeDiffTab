@@ -24,10 +24,8 @@ no setup. Paste two blobs of text, press **Diff**, read the result.
   clipped line to see it in full via its tooltip.
   Press **Ctrl+Enter** (**Cmd+Enter** on macOS) from inside either text box
   as a shortcut for the Diff button.
-- **Swap button.** Swaps the left and right text boxes in place, for when
-  you pasted the two sides backwards.
-- **Open in Diff Editor.** Sends both texts to VS Code's own built-in diff
-  editor instead of Diff Tab's inline view. See below for how this works.
+- **Open in VS Code Diff Editor.** Sends both texts to VS Code's own built-in
+  diff editor instead of Diff Tab's inline view. See below for how this works.
 - **Multiple tabs.** Every "Diff Tab: New Diff" invocation opens its own
   independent tab; there's no limit on how many can be open at once.
 - **Survives reload.** The last pair of texts you typed is restored the
@@ -44,11 +42,10 @@ no setup. Paste two blobs of text, press **Diff**, read the result.
 2. Paste the original text into the left box, the changed text into the
    right box.
 3. Press **Diff** (or Ctrl/Cmd+Enter) to see the aligned, colorized diff
-   below the inputs, or **Open in Diff Editor** to compare the same two
-   texts in VS Code's native diff view.
-4. Use **Swap** to flip the two sides, or **Clear** to empty both boxes.
+   below the inputs, or **Open in VS Code Diff Editor** to compare the same
+   two texts in VS Code's native diff view.
 
-## The "Open in Diff Editor" mechanism
+## The "Open in VS Code Diff Editor" mechanism
 
 VS Code's built-in diff editor (`vscode.diff`) compares two files, not two
 in-memory strings, so Diff Tab writes your two text boxes out to a pair of
@@ -74,12 +71,12 @@ swept away the next time the extension activates.
 Diff Tab isn't published to the Marketplace. Install the packaged
 `.vsix` directly:
 
-1. Download or build `vscode-diff-tab-0.1.0.vsix`.
+1. Download or build `vscode-diff-tab-0.1.1.vsix`.
 2. In VS Code, open the Command Palette and run **Extensions: Install from
    VSIX...**, then pick the file — or from a terminal:
 
    ```bash
-   code --install-extension vscode-diff-tab-0.1.0.vsix
+   code --install-extension vscode-diff-tab-0.1.1.vsix
    ```
 
 3. Reload the window if prompted. **Diff Tab: New Diff** is now available

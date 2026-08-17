@@ -213,9 +213,7 @@ export class DiffPanel {
   <div id="root">
     <div class="toolbar">
       <button id="btn-diff" type="button" title="Compute the diff (Ctrl/Cmd+Enter)">Diff</button>
-      <button id="btn-open-diff-editor" type="button" title="Open both texts in VS Code's built-in diff editor">Open in Diff Editor</button>
-      <button id="btn-clear" type="button" title="Clear both text boxes">Clear</button>
-      <button id="btn-swap" type="button" title="Swap the left and right text">Swap</button>
+      <button id="btn-open-diff-editor" type="button" title="Open both texts in VS Code's built-in diff editor">Open in VS Code Diff Editor</button>
     </div>
     <div class="inputs-row" id="inputs-row">
       <div class="input-cell input-left" id="input-left-cell">

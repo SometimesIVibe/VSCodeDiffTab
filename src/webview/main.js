@@ -43,8 +43,6 @@ import { renderDiff } from "./render.mjs";
   const hSplitter = document.getElementById("h-splitter");
   const diffButton = document.getElementById("btn-diff");
   const openDiffEditorButton = document.getElementById("btn-open-diff-editor");
-  const clearButton = document.getElementById("btn-clear");
-  const swapButton = document.getElementById("btn-swap");
   const resultArea = document.getElementById("result-area");
 
   /** Clamps `value` into the inclusive [min, max] range. */
@@ -283,27 +281,6 @@ import { renderDiff } from "./render.mjs";
       left: leftTextarea.value,
       right: rightTextarea.value,
     });
-  });
-
-  clearButton.addEventListener("click", () => {
-    leftTextarea.value = "";
-    rightTextarea.value = "";
-    if (saveTextTimer !== null) {
-      clearTimeout(saveTextTimer);
-      saveTextTimer = null;
-    }
-    commitTexts();
-    leftTextarea.focus();
-  });
-
-  // Swap goes through the normal (debounced) save path — the same one
-  // every keystroke uses — rather than a bespoke immediate save.
-  swapButton.addEventListener("click", () => {
-    const leftValue = leftTextarea.value;
-    const rightValue = rightTextarea.value;
-    leftTextarea.value = rightValue;
-    rightTextarea.value = leftValue;
-    saveTextDebounced();
   });
 
   leftTextarea.addEventListener("input", saveTextDebounced);
