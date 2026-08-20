@@ -14,8 +14,11 @@
 // unmodified. esbuild bundles `.mjs` into the webview IIFE exactly like
 // `.js` — this split costs nothing at build time.
 
+import { splitForMarkers } from "./whitespace.js";
+
 /**
  * @typedef {import("./align.js").Row} Row
+ * @typedef {import("./charDiff.js").Seg} Seg
  */
 
 /**
@@ -122,10 +125,10 @@ function renderChunk(table, rows, start) {
 function appendRow(parent, row) {
   const classes = cellClasses(row);
   parent.appendChild(createNumCell("left", row.left, classes.left));
-  parent.appendChild(createTextCell("left", row.left, classes.left));
+  parent.appendChild(createTextCell("left", row.left, classes.left, row.leftSegs));
   parent.appendChild(createGutterCell());
   parent.appendChild(createNumCell("right", row.right, classes.right));
-  parent.appendChild(createTextCell("right", row.right, classes.right));
+  parent.appendChild(createTextCell("right", row.right, classes.right, row.rightSegs));
 }
 
 /** @param {"left"|"right"} side @param {{no:number,text:string}|null} cell @param {{pad:boolean,highlight:boolean}} sideClasses */
@@ -136,12 +139,19 @@ function createNumCell(side, cell, sideClasses) {
   return el;
 }
 
-/** @param {"left"|"right"} side @param {{no:number,text:string}|null} cell @param {{pad:boolean,highlight:boolean}} sideClasses */
-function createTextCell(side, cell, sideClasses) {
+/**
+ * @param {"left"|"right"} side
+ * @param {{no:number,text:string}|null} cell
+ * @param {{pad:boolean,highlight:boolean}} sideClasses
+ * @param {Seg[]|undefined} segs this side's character-level diff segments
+ *   (only present on "change" rows — see align.js's Row typedef); absent
+ *   for context/del/add rows, which render as a single unchanged segment.
+ */
+function createTextCell(side, cell, sideClasses, segs) {
   const el = document.createElement("div");
   el.className = buildClassName("text", side, sideClasses);
   const text = cell === null ? "" : cell.text;
-  el.textContent = text;
+  appendCellContent(el, text, segs);
   if (text !== "") {
     // Long-line strategy: cells clip with an ellipsis (media/main.css) so
     // one row always stays one visual line and the grid alignment never
@@ -151,6 +161,67 @@ function createTextCell(side, cell, sideClasses) {
     el.title = text;
   }
   return el;
+}
+
+/**
+ * Fills a text cell with segment- and whitespace-marker-aware content.
+ * `segs` (when present, i.e. a "change" row) is the ordered list of
+ * unchanged/changed runs from charDiff.js; a `changed: true` segment is
+ * wrapped in a `.char-diff` span so it gets the darker text-background on
+ * top of the row's lighter line-background (media/main.css) — VS Code's
+ * own line-vs-inline diff look. Absent `segs` (context/del/add rows) falls
+ * back to treating the whole cell text as one unchanged segment.
+ *
+ * Every segment is further split by `splitForMarkers` (whitespace.js) so
+ * notable/ambiguous whitespace and control characters render as visible
+ * `.ws-marker` spans instead of disappearing into ordinary text — this
+ * applies inside AND outside `.char-diff` segments, since an unchanged run
+ * can still contain, e.g., a tab.
+ *
+ * @param {HTMLElement} el
+ * @param {string} text
+ * @param {Seg[]|undefined} segs
+ */
+function appendCellContent(el, text, segs) {
+  const segments = segs && segs.length > 0 ? segs : [{ text, changed: false }];
+  for (const seg of segments) {
+    const parts = splitForMarkers(seg.text);
+    if (seg.changed) {
+      const span = document.createElement("span");
+      span.className = "char-diff";
+      appendMarkerParts(span, parts);
+      el.appendChild(span);
+    } else {
+      appendMarkerParts(el, parts);
+    }
+  }
+}
+
+/**
+ * Appends `splitForMarkers` output (plain text runs + notable-char
+ * markers) to `parent`. All text reaches the DOM via `createTextNode`/
+ * `textContent` — never innerHTML — so arbitrary user text (including the
+ * marker's own glyph, which is always one of our own fixed strings, not
+ * user data) stays safe.
+ *
+ * @param {HTMLElement} parent
+ * @param {ReturnType<import("./whitespace.js").splitForMarkers>} parts
+ */
+function appendMarkerParts(parent, parts) {
+  for (const part of parts) {
+    if ("marker" in part) {
+      const span = document.createElement("span");
+      span.className = "ws-marker";
+      span.textContent = part.marker.glyph;
+      span.title = `${part.marker.name} (U+${part.marker.cp
+        .toString(16)
+        .toUpperCase()
+        .padStart(4, "0")})`;
+      parent.appendChild(span);
+    } else {
+      parent.appendChild(document.createTextNode(part.text));
+    }
+  }
 }
 
 function createGutterCell() {

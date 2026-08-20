@@ -231,6 +231,62 @@ suite("alignDiff", () => {
     assert.deepStrictEqual(stats, { added: 3, removed: 2 });
   });
 
+  // -------------------------------------------------------------------
+  // Step 8: char-diff segments + line-ending (\r) handling.
+  // -------------------------------------------------------------------
+
+  test("a change row exposes leftSegs/rightSegs from charDiff", () => {
+    const { rows } = alignDiff("cat\n", "cot\n");
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].type, "change");
+    assert.deepStrictEqual(rows[0].leftSegs, [
+      { text: "c", changed: false },
+      { text: "a", changed: true },
+      { text: "t", changed: false },
+    ]);
+    assert.deepStrictEqual(rows[0].rightSegs, [
+      { text: "c", changed: false },
+      { text: "o", changed: true },
+      { text: "t", changed: false },
+    ]);
+  });
+
+  test("context/del/add rows never carry leftSegs/rightSegs", () => {
+    const { rows } = alignDiff("keep\nold\n", "keep\n");
+    for (const row of rows) {
+      assert.strictEqual(row.leftSegs, undefined);
+      assert.strictEqual(row.rightSegs, undefined);
+    }
+  });
+
+  test("CRLF vs LF on an otherwise-identical line: one change row whose only changed char is \\r", () => {
+    const { rows, stats } = alignDiff("x\r\n", "x\n");
+
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].type, "change");
+    assert.strictEqual(rows[0].left!.text, "x\r");
+    assert.strictEqual(rows[0].right!.text, "x");
+    assert.deepStrictEqual(rows[0].leftSegs, [
+      { text: "x", changed: false },
+      { text: "\r", changed: true },
+    ]);
+    assert.deepStrictEqual(rows[0].rightSegs, [{ text: "x", changed: false }]);
+    assert.deepStrictEqual(stats, { added: 1, removed: 1 });
+  });
+
+  test("a plain trailing-newline-only difference does not crash and still zips as one change row", () => {
+    const { rows, stats } = alignDiff("b\n", "b");
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].type, "change");
+    assert.strictEqual(rows[0].left!.text, "b");
+    assert.strictEqual(rows[0].right!.text, "b");
+    // Identical line text on both sides once the trailing "\n" separator
+    // itself is stripped -> charDiff sees no character difference at all.
+    assert.deepStrictEqual(rows[0].leftSegs, [{ text: "b", changed: false }]);
+    assert.deepStrictEqual(rows[0].rightSegs, [{ text: "b", changed: false }]);
+    assert.deepStrictEqual(stats, { added: 1, removed: 1 });
+  });
+
   suite("cellClasses (media/render.mjs)", () => {
     suiteSetup(async () => {
       const renderMjsPath = path.join(__dirname, "..", "..", "src", "webview", "render.mjs");

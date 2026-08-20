@@ -244,20 +244,67 @@ body.dragging-h * {
   background-color: var(--vscode-panel-border);
 }
 
+/* Row/line background (Step 8): the lighter *LineBackground* tokens, the
+   same ones VS Code's own diff editor uses for a changed line as a whole.
+   `.char-diff` (below) stacks the darker *TextBackground* token for the
+   row's own side on top of exactly the differing characters — the same
+   two-layer model VS Code's inline diff uses, so the differing characters
+   read as "extra dark" purely from the two backgrounds compositing,
+   with no separate "extra dark" logic needed. */
 .cell.left.highlight {
   background-color: var(
-    --vscode-diffEditor-removedTextBackground,
+    --vscode-diffEditor-removedLineBackground,
     rgba(255, 0, 0, 0.2)
   );
 }
 
 .cell.right.highlight {
   background-color: var(
-    --vscode-diffEditor-insertedTextBackground,
+    --vscode-diffEditor-insertedLineBackground,
     rgba(0, 255, 0, 0.2)
   );
 }
 
 .cell.pad {
   background-color: var(--vscode-diffEditor-diagonalFill, rgba(128, 128, 128, 0.15));
+}
+
+/* Character-level diff highlight (Step 8) — the darker layer described
+   above. Only present inside a "change" row's cells (render.mjs only
+   wraps `changed: true` charDiff segments in this span), so the selector
+   doesn't need to worry about del/add/context rows. */
+.cell.left .char-diff {
+  background-color: var(
+    --vscode-diffEditor-removedTextBackground,
+    rgba(255, 0, 0, 0.35)
+  );
+}
+
+.cell.right .char-diff {
+  background-color: var(
+    --vscode-diffEditor-insertedTextBackground,
+    rgba(0, 255, 0, 0.35)
+  );
+}
+
+/* Notable/ambiguous whitespace + control-char markers (Step 8) — see
+   src/webview/whitespace.js. Dimmed so a marker still reads as "not
+   literal text" rather than looking like an ordinary character, and a
+   faint outline so a zero-width character's marker (which has no glyph
+   ink of its own beyond the stand-in symbol) stays visible even against
+   its own background. */
+.ws-marker {
+  font-family: var(--vscode-editor-font-family, monospace);
+  opacity: 0.7;
+  outline: 1px dotted var(--vscode-descriptionForeground, currentColor);
+  outline-offset: -1px;
+  border-radius: 2px;
+}
+
+/* Inside a `.char-diff` segment the marker already sits on the darker
+   text-background; use the full-strength foreground for its outline so
+   it doesn't wash out against that darker fill. */
+.char-diff .ws-marker {
+  opacity: 0.85;
+  outline-color: currentColor;
 }

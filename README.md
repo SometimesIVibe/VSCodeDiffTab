@@ -24,6 +24,26 @@ no setup. Paste two blobs of text, press **Diff**, read the result.
   clipped line to see it in full via its tooltip.
   Press **Ctrl+Enter** (**Cmd+Enter** on macOS) from inside either text box
   as a shortcut for the Diff button.
+- **Inline character highlight.** Within a changed line, the exact
+  differing characters get an extra-dark highlight on top of the row's own
+  red/green background — the same line-vs-inline look VS Code's built-in
+  diff editor uses, so a one-character edit in a long line is obvious at a
+  glance instead of making you scan the whole line.
+- **Whitespace and control-character markers.** Ambiguous or invisible
+  characters that would otherwise make a real difference look like no
+  difference at all — a non-breaking space standing in for a regular
+  space, a zero-width space, an ideographic or narrow space, a stray form
+  feed, and similar — render as a small, dimmed, tooltipped marker (e.g.
+  hovering shows "NO-BREAK SPACE (U+00A0)") instead of disappearing into
+  the text.
+- **Line-ending differences.** A line that differs only in its line
+  ending — CRLF vs LF — shows a highlighted carriage-return marker at the
+  end of the line, the same way any other single-character difference
+  does; no separate "line ending" UI is needed. Known limitation: a
+  lone-CR (classic Mac, pre-OS X) line ending isn't recognized as a line
+  break at all (the diff engine splits lines on `\n` only), so such a file
+  is treated as one long line — its `\r` characters still render as
+  markers, just not as separate diff rows.
 - **Open in VS Code Diff Editor.** Sends both texts to VS Code's own built-in
   diff editor instead of Diff Tab's inline view. See below for how this works.
 - **Multiple tabs.** Every "Diff Tab: New Diff" invocation opens its own
@@ -71,12 +91,12 @@ swept away the next time the extension activates.
 Diff Tab isn't published to the Marketplace. Install the packaged
 `.vsix` directly:
 
-1. Download or build `vscode-diff-tab-0.1.1.vsix`.
+1. Download or build `vscode-diff-tab-0.2.0.vsix`.
 2. In VS Code, open the Command Palette and run **Extensions: Install from
    VSIX...**, then pick the file — or from a terminal:
 
    ```bash
-   code --install-extension vscode-diff-tab-0.1.1.vsix
+   code --install-extension vscode-diff-tab-0.2.0.vsix
    ```
 
 3. Reload the window if prompted. **Diff Tab: New Diff** is now available

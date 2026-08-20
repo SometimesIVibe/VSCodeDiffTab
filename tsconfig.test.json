@@ -18,6 +18,8 @@
   "include": [
     "src/test/**/*.ts",
     "src/webview/align.js",
+    "src/webview/charDiff.js",
+    "src/webview/whitespace.js",
     "src/tempFiles.ts"
   ],
   "exclude": ["node_modules", "dist", "out", "out-test"]

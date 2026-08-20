@@ -2,12 +2,19 @@
 // data in, plain data out — so it can be imported by the webview bundle
 // (Step 3) and by node-based unit tests (Step 7) unchanged.
 import { diffLines } from "diff";
+import { charDiff } from "./charDiff.js";
 
 /**
  * @typedef {{ no: number, text: string }} Cell
  * A single side's line: its 1-based line number and text content.
  *
- * @typedef {{ left: Cell | null, right: Cell | null, type: RowType }} Row
+ * @typedef {{ left: Cell | null, right: Cell | null, type: RowType, leftSegs?: import("./charDiff.js").Seg[], rightSegs?: import("./charDiff.js").Seg[] }} Row
+ * `leftSegs`/`rightSegs` (Step 8) are the character-level diff of
+ * `left.text` vs `right.text`, attached only on "change" rows (the only
+ * row type where both sides have real, potentially-differing text to
+ * compare char-by-char). Context/del/add rows never get segments — a
+ * context row's two sides are byte-identical by construction, and a
+ * del/add row has nothing on the other side to diff against.
  *
  * @typedef {"context" | "del" | "add" | "change"} RowType
  * Row-type encoding:
@@ -38,6 +45,23 @@ import { diffLines } from "diff";
  * trailing newline (the final part of an input lacking one) is left
  * untouched. An empty string part (possible for a fully-empty side) yields
  * no lines at all — `[]`, not `[""]`.
+ *
+ * Only `"\n"` is treated as the line separator here — a trailing `"\r"` is
+ * deliberately NOT stripped (Step 8). `diffLines` splits its input on
+ * `"\n"` too, so a CRLF ("\r\n") line keeps its `"\r"` as the very last
+ * character of the resulting line text. That in turn makes a CRLF-vs-LF
+ * difference ("a\r\n" vs "a\n") a real one-character difference once it
+ * reaches charDiff.js (a trailing `\r` on one side, none on the other),
+ * which the whitespace classifier then renders as a highlighted CR marker
+ * — line-ending differences fall out of the existing char-diff machinery
+ * for free, with no EOL special-casing needed.
+ *
+ * Known limitation: this only helps when the input is split into multiple
+ * lines by `\n` in the first place. A lone-CR (classic Mac, pre-OS X)
+ * line ending has no `\n` at all, so `diffLines` (which splits on `\n`)
+ * sees the whole file as a single line; its embedded `\r` characters still
+ * render as CR markers via the char-diff/whitespace path, just not as
+ * separate rows the way a CRLF or LF file would be.
  *
  * @param {string} text
  * @returns {string[]}
@@ -101,10 +125,15 @@ export function alignDiff(oldText, newText) {
 
       const zipLength = Math.min(removedLines.length, addedLines.length);
       for (let j = 0; j < zipLength; j++) {
+        const leftText = removedLines[j];
+        const rightText = addedLines[j];
+        const segs = charDiff(leftText, rightText);
         rows.push({
-          left: { no: leftNo++, text: removedLines[j] },
-          right: { no: rightNo++, text: addedLines[j] },
+          left: { no: leftNo++, text: leftText },
+          right: { no: rightNo++, text: rightText },
           type: "change",
+          leftSegs: segs.left,
+          rightSegs: segs.right,
         });
       }
       for (let j = zipLength; j < removedLines.length; j++) {

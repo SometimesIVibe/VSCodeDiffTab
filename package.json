@@ -2,7 +2,7 @@
   "name": "vscode-diff-tab",
   "displayName": "Diff Tab",
   "description": "Opens a webview editor tab with two side-adjustable text inputs, a git-style side-by-side line diff, and a shortcut into VS Code's built-in diff editor.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "joachimsejr",
   "license": "MIT",
   "icon": "icon.png",
